@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #define LLAMA_VER "b11946"
 #define MODEL_FILE "d1-2B-Q8_0.gguf"
@@ -19,11 +19,11 @@
 struct DecisionState
 {
 	std::string screenshotFormat;
+	std::string prevScreenshotBase64;
 	std::string screenshotBase64;
 	
-	std::string lastDecision;
+	std::string previousAction;
 	sf::Vector2f ballVelocity;
-	int livesRemaining;
 };
 
 class LlamaManager

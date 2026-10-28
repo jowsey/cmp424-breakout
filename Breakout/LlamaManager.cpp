@@ -21,7 +21,7 @@ void LlamaManager::cacheDeps()
 	else
 	{
 		std::println("llama.cpp not found. Downloading...");
-		
+
 		std::println("Downloading llama.cpp to: ", cachePath.generic_string());
 		const int dlResult = std::system(std::format("curl -L# --create-dirs {} -o {}", LLAMA_URL, (cachePath / "llama.zip").string()).c_str());
 		if (dlResult != 0) throw std::runtime_error("Failed to download llama.cpp!");
@@ -96,10 +96,11 @@ void LlamaManager::launchServer()
 		binPathStr.c_str(),
 		"-m", modelPathStr.c_str(),
 		"--mmproj", mmprojPathStr.c_str(),
+		"--ctx-size", "8192",
 		"-b", "8192",
 		"-ub", "8192",
-		"-c", "16384",
 		"-np", "1",
+		"-ngl", "all",
 		"--metrics",
 		nullptr
 	};
@@ -158,8 +159,7 @@ void LlamaManager::launchServer()
   		"questions": {
   		  "refund":  {"type": "noul", "instructions": "Is the customer asking for a refund?"},
   		  "team":    {"type": "choice", "instructions": "Which team should handle this?",
-  		              "criteria": {"billing": "Charges, refunds, invoices", "technical": "App or site faults",
-  		                           "fraud": "Suspected unauthorised use"}},
+  		              "criteria": {"billing": "Charges, refunds, invoices", "technical": "App or site faults", "fraud": "Suspected unauthorised use"}},
   		  "urgency": {"type": "score", "instructions": "How urgent is this?",
   		              "criteria": ["Can wait", "Today", "Blocking the customer now"]}
   		}
@@ -182,17 +182,19 @@ bool LlamaManager::isServerActive()
 
 PaddleAction LlamaManager::requestDecision(DecisionState state)
 {
-	std::string ballDirection = std::format("{} and {}", state.ballVelocity.x > 0 ? "right" : "left", state.ballVelocity.y > 0 ? "down" : "up");
+	std::string prevScreenshotString = state.prevScreenshotBase64.empty()
+		                                   ? ""
+		                                   : std::format("\"data:image/{};base64,{}\", ", state.screenshotFormat, state.prevScreenshotBase64);
 
 	const std::string jsonPayload = std::format(R"(
 {{
-	"state": "You are playing breakout. You are controlling the blue paddle at the bottom of the screen. The ball is currently moving {}. You have {} lives remaining. Attached is a screenshot of the game window.",
-	"images": ["data:image/{};base64,{}"],
+	"state": "You are playing breakout. You are controlling the blue paddle at the bottom of the screen. The first image is a screenshot of the *previous* frame, and the second is a screenshot of the *current* frame, for comparison.",
+	"images": [{2}"data:image/{0};base64,{1}"],
 	"questions": {{
-		"move": {{ "type": "choice", "instructions": "Which way should the paddle move to hit the ball?", "criteria": {{ "left": "Move to the left", "right": "Move to the right" }} }}
+		"move": {{ "type": "choice", "instructions": "Which way should the paddle move?", "criteria": {{ "left": "Move to the left", "right": "Move to the right", "none": "Do not move" }} }}
 	}}
 }}
-	)", ballDirection, state.livesRemaining, state.screenshotFormat, state.screenshotBase64);
+	)", state.screenshotFormat, state.screenshotBase64, prevScreenshotString);
 
 	// std::println("{}", jsonPayload);
 
@@ -200,20 +202,32 @@ PaddleAction LlamaManager::requestDecision(DecisionState state)
 	{
 		// std::println("Received decision: {}", res->body);
 
-		nlohmann::json j = nlohmann::json::parse(res->body);
-		std::string choice = j["answers"]["move"]["choice"];
+		std::string choice;
+
+		try
+		{
+			nlohmann::json j = nlohmann::json::parse(res->body);
+			choice = j["answers"]["move"]["choice"];
+		}
+		catch (const std::exception& e)
+		{
+			std::println("Error parsing decision: {} (body was: {})", e.what(), res->body);
+			return PaddleAction::None;
+		}
 
 		if (choice == "left")
 			return PaddleAction::Left;
 		if (choice == "right")
 			return PaddleAction::Right;
+		if (choice == "none")
+			return PaddleAction::None;
 
 		std::println("Model returned unusual choice '{}'!", choice);
 		return PaddleAction::None;
 	}
 	else
 	{
-		std::println("decision error: {}", static_cast<int>(res.error()));
+		std::println("decision error ({}): {}", static_cast<int>(res.error()), res->body);
 		return PaddleAction::None;
 	}
 }

@@ -13,19 +13,22 @@ int main()
 	llamaManager.launchServer();
 
 	sf::RenderWindow window(sf::VideoMode(1000, 800), "Breakout");
+	window.setFramerateLimit(60);
+
 	GameManager gameManager(&window);
 	gameManager.initialize();
 
 	sf::Clock clock;
 	float deltaTime;
 
-	constexpr float fixedStepDeltaTime = 1.0f / 60.0f;
+	constexpr float fixedStepDeltaTime = 1.0f / 15.0f;
 
 	bool warnedServerInactive = false;
 
 	sf::Texture screenshotTexture;
 	screenshotTexture.create(window.getSize().x, window.getSize().y);
 
+	std::string prevScreenshotBase64;
 	std::vector<sf::Uint8> screenshotMemoryBuffer;
 
 	std::string prevAction{"none"};
@@ -40,7 +43,7 @@ int main()
 		}
 
 		deltaTime = clock.restart().asSeconds();
-		std::println("dt: {} sec", deltaTime);
+		// std::println("dt: {} sec", deltaTime);
 
 		auto action = PaddleAction::None;
 
@@ -63,16 +66,18 @@ int main()
 
 			DecisionState state{
 				.screenshotFormat = screenshotFormat,
+				.prevScreenshotBase64 = prevScreenshotBase64,
 				.screenshotBase64 = screenshotBase64,
-				.lastDecision = prevAction,
+				.previousAction = prevAction,
 				.ballVelocity = gameManager.getBall()->getVelocity(),
-				.livesRemaining = gameManager.getLives()
 			};
 
 			action = llamaManager.requestDecision(state);
 			std::string actionStr = action == PaddleAction::Left ? "left" : action == PaddleAction::Right ? "right" : "none";
 			std::println("Got action {}", actionStr);
+
 			prevAction = actionStr;
+			prevScreenshotBase64 = screenshotBase64;
 		}
 		else
 		{
@@ -87,7 +92,7 @@ int main()
 			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) action = PaddleAction::Right;
 		}
 
-		gameManager.update(deltaTime, action);
+		gameManager.update(fixedStepDeltaTime, action);
 
 		window.clear();
 		gameManager.render();
