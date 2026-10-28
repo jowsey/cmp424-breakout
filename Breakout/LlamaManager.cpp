@@ -72,7 +72,7 @@ LlamaManager::~LlamaManager()
 
 void LlamaManager::launchServer()
 {
-	std::println("Launching llama.cpp server...");
+	std::print("Launching llama.cpp server...");
 
 	const std::string binPathStr = llamaServerBinPath.string();
 	const std::string modelPathStr = modelPath.string();
@@ -87,17 +87,46 @@ void LlamaManager::launchServer()
 		nullptr
 	};
 
-	const int result = subprocess_create(args, subprocess_option_combined_stdout_stderr | subprocess_option_inherit_environment, &llamaSubprocess);
+	const int result = subprocess_create(
+		args,
+		subprocess_option_combined_stdout_stderr | subprocess_option_inherit_environment | subprocess_option_enable_async,
+		&llamaSubprocess
+	);
 	if (result != 0) throw std::runtime_error("Failed to launch llama.cpp server!");
 
-	// read the output of the server
+	// read until server listening
+	std::array<char, 1024> buffer{};
+	std::string accumulator;
+
 	while (true)
 	{
-		std::array<char, 1024> buffer{};
-		const unsigned int numBytes = subprocess_read_stdout(&llamaSubprocess, buffer.data(), buffer.size());
+		const std::uint32_t numBytes = subprocess_read_stdout(&llamaSubprocess, buffer.data(), buffer.size());
+
 		if (numBytes > 0)
 		{
-			std::print("{}", std::string(buffer.data(), numBytes));
+			accumulator.append(buffer.data(), numBytes);
+
+			bool found = false;
+			while (accumulator.find('\n') != std::string::npos)
+			{
+				const auto newlinePos = accumulator.find('\n');
+
+				std::string line = accumulator.substr(0, newlinePos);
+				if (line.find("listening on") != std::string::npos)
+				{
+					std::println(" {}", line);
+					found = true;
+					break;
+				}
+
+				accumulator.erase(0, newlinePos + 1);
+			}
+
+			if (found) break;
+		}
+		else
+		{
+			throw std::runtime_error("llama.cpp server process failed to start listening!");
 		}
 	}
 }
