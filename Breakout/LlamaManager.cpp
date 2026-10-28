@@ -101,6 +101,7 @@ void LlamaManager::launchServer()
 		"-b", "8192",
 		"-ub", "8192",
 		"-c", "16384",
+		"--image-min-tokens", "2048",
 		"-np", "1",
 		nullptr
 	};
@@ -183,21 +184,24 @@ bool LlamaManager::isServerActive()
 
 PaddleAction LlamaManager::requestDecision(DecisionState state)
 {
+	std::string ballDirection = std::format("{} and {}", state.ballVelocity.x > 0 ? "right" : "left", state.ballVelocity.y > 0 ? "down" : "up");
+
 	const std::string jsonPayload = std::format(R"(
 {{
-	"state": "You are playing breakout. Attached is a screenshot of the game window.",
+	"state": "You are playing breakout. You control the blue paddle. The ball is currently moving {}. Your last decision was {}. You have {} lives remaining. Attached is a screenshot of the game window.",
 	"images": ["data:image/{};base64,{}"],
 	"questions": {{
-		"move": {{ "type": "choice", "instructions": "Which way should you move?", "criteria": {{ "left": "Move to the left", "right": "Move to the right" }} }}
+		"move": {{ "type": "choice", "instructions": "Which way should the paddle move to hit the ball?", "criteria": {{ "left": "Move to the left", "right": "Move to the right" }} }}
 	}}
 }}
-	)", state.screenshotFormat, state.screenshotBase64);
+	)", ballDirection, state.lastDecision, state.livesRemaining, state.screenshotFormat, state.screenshotBase64);
+
+	// std::println("{}", jsonPayload);
 
 	if (const auto res = httpClient->Post("/v1/systemone", jsonPayload, "application/json"))
 	{
 		// std::println("Received decision: {}", res->body);
 
-		// convert to json
 		nlohmann::json j = nlohmann::json::parse(res->body);
 		std::string choice = j["answers"]["move"]["choice"];
 

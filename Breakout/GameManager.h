@@ -31,7 +31,9 @@ public:
     PowerupManager* getPowerupManager() const;
     sf::RenderWindow* getWindow() const;
     UI* getUI() const;
-
+    int getLives() const;
+    Ball* getBall() const;
+    
 private:
     bool _pause;
     float _pauseHold;

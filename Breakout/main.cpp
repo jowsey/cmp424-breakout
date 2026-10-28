@@ -26,6 +26,8 @@ int main()
 	sf::Texture screenshotTexture;
 	screenshotTexture.create(window.getSize().x, window.getSize().y);
 
+	std::string prevAction{"none"};
+
 	while (window.isOpen())
 	{
 		sf::Event event;
@@ -59,11 +61,16 @@ int main()
 
 			DecisionState state{
 				.screenshotFormat = screenshotFormat,
-				.screenshotBase64 = screenshotBase64
+				.screenshotBase64 = screenshotBase64,
+				.lastDecision = prevAction,
+				.ballVelocity = gameManager.getBall()->getVelocity(),
+				.livesRemaining = gameManager.getLives()
 			};
 
 			action = llamaManager.requestDecision(state);
-			std::println("Got action {}", action == PaddleAction::Left ? "left" : action == PaddleAction::Right ? "right" : "none");
+			std::string actionStr = action == PaddleAction::Left ? "left" : action == PaddleAction::Right ? "right" : "none";
+			std::println("Got action {}", actionStr);
+			prevAction = actionStr;
 		}
 		else
 		{

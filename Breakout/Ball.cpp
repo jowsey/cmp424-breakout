@@ -114,3 +114,8 @@ void Ball::setFireBall(float duration)
     _isFireBall = false;
     _timeWithPowerupEffect = 0.f;    
 }
+
+sf::Vector2f Ball::getVelocity() const
+{
+    return _direction * _velocity;
+}

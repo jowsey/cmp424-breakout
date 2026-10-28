@@ -121,6 +121,11 @@ void GameManager::levelComplete()
 
 sf::RenderWindow* GameManager::getWindow() const { return _window; }
 UI* GameManager::getUI() const { return _ui; }
+
+int GameManager::getLives() const { return _lives; }
+
+Ball* GameManager::getBall() const { return _ball; }
+
 Paddle* GameManager::getPaddle() const { return _paddle; }
 BrickManager* GameManager::getBrickManager() const { return _brickManager; }
 PowerupManager* GameManager::getPowerupManager() const { return _powerupManager; }

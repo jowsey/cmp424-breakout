@@ -33,6 +33,10 @@ struct DecisionState
 {
 	std::string screenshotFormat;
 	std::string screenshotBase64;
+	
+	std::string lastDecision;
+	sf::Vector2f ballVelocity;
+	int livesRemaining;
 };
 
 class LlamaManager
