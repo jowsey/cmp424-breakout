@@ -5,6 +5,7 @@
 #include <print>
 
 #include "httplib/httplib.h"
+#include "json/json.hpp"
 
 
 void LlamaManager::cacheDeps()
@@ -20,12 +21,13 @@ void LlamaManager::cacheDeps()
 	else
 	{
 		std::println("llama.cpp not found. Downloading...");
-
+		
 		std::println("Downloading llama.cpp to: ", cachePath.generic_string());
-		const int dlResult = std::system(std::format("curl -L# --create-dirs {} -o {}", LlamaUrl, (cachePath / "llama.zip").string()).c_str());
+		const int dlResult = std::system(std::format("curl -L# --create-dirs {} -o {}", LLAMA_URL, (cachePath / "llama.zip").string()).c_str());
 		if (dlResult != 0) throw std::runtime_error("Failed to download llama.cpp!");
 
 		std::println("Unzipping...");
+		std::filesystem::create_directories(llamaPath);
 		const int unzipResult = std::system(
 			std::format("tar -xf {} -C {}", (cachePath / "llama.zip").string(), llamaPath.lexically_relative(currentPath).string()).c_str()
 		);
@@ -47,7 +49,7 @@ void LlamaManager::cacheDeps()
 		std::println("Model not found. Downloading...");
 
 		std::println("Downloading model to: ", modelPath.generic_string());
-		const int dlResult = std::system(std::format("curl -L# --create-dirs {} -o {}", ModelUrl, modelPath.string()).c_str());
+		const int dlResult = std::system(std::format("curl -L# --create-dirs {} -o {}", MODEL_URL, modelPath.string()).c_str());
 		if (dlResult != 0) throw std::runtime_error("Failed to download model!");
 	}
 
@@ -61,23 +63,19 @@ void LlamaManager::cacheDeps()
 		std::println("Mmproj not found. Downloading...");
 
 		std::println("Downloading mmproj to: ", mmprojPath.generic_string());
-		const int dlResult = std::system(std::format("curl -L# --create-dirs {} -o {}", MmprojUrl, mmprojPath.string()).c_str());
+		const int dlResult = std::system(std::format("curl -L# --create-dirs {} -o {}", MMPROJ_URL, mmprojPath.string()).c_str());
 		if (dlResult != 0) throw std::runtime_error("Failed to download mmproj!");
 	}
 }
 
 LlamaManager::LlamaManager()
 {
-	const std::string llamaVer = "b11946";
-	std::string llamaUrl = "https://github.com/ggml-org/llama.cpp/releases/download/" + llamaVer + "/llama-" + llamaVer + "-bin-win-vulkan-x64.zip";
-	std::string modelUrl = "https://huggingface.co/LiquidAI/d1-2B-GGUF/resolve/main/d1-2B-Q8_0.gguf?download=true";
-
 	currentPath = std::filesystem::current_path();
 	cachePath = currentPath / "breakout-cache/";
-	llamaPath = cachePath / ("llama-" + llamaVer + "/");
+	llamaPath = cachePath / ("llama-" LLAMA_VER "/");
 	llamaServerBinPath = llamaPath / "llama-server.exe";
-	modelPath = cachePath / "d1-2B-Q8_0.gguf";
-	mmprojPath = cachePath / "mmproj-d1-2B-F16.gguf";
+	modelPath = cachePath / MODEL_FILE;
+	mmprojPath = cachePath / MMPROJ_FILE;
 }
 
 LlamaManager::~LlamaManager()
@@ -101,8 +99,8 @@ void LlamaManager::launchServer()
 		"-b", "8192",
 		"-ub", "8192",
 		"-c", "16384",
-		"--image-min-tokens", "2048",
 		"-np", "1",
+		"--metrics",
 		nullptr
 	};
 
@@ -188,13 +186,13 @@ PaddleAction LlamaManager::requestDecision(DecisionState state)
 
 	const std::string jsonPayload = std::format(R"(
 {{
-	"state": "You are playing breakout. You control the blue paddle. The ball is currently moving {}. Your last decision was {}. You have {} lives remaining. Attached is a screenshot of the game window.",
+	"state": "You are playing breakout. You are controlling the blue paddle at the bottom of the screen. The ball is currently moving {}. You have {} lives remaining. Attached is a screenshot of the game window.",
 	"images": ["data:image/{};base64,{}"],
 	"questions": {{
 		"move": {{ "type": "choice", "instructions": "Which way should the paddle move to hit the ball?", "criteria": {{ "left": "Move to the left", "right": "Move to the right" }} }}
 	}}
 }}
-	)", ballDirection, state.lastDecision, state.livesRemaining, state.screenshotFormat, state.screenshotBase64);
+	)", ballDirection, state.livesRemaining, state.screenshotFormat, state.screenshotBase64);
 
 	// std::println("{}", jsonPayload);
 
