@@ -46,9 +46,23 @@ void LlamaManager::cacheDeps()
 	{
 		std::println("Model not found. Downloading...");
 
-		std::println("Downloading model to: ", cachePath.generic_string());
+		std::println("Downloading model to: ", modelPath.generic_string());
 		const int dlResult = std::system(std::format("curl -L# --create-dirs {} -o {}", ModelUrl, modelPath.string()).c_str());
 		if (dlResult != 0) throw std::runtime_error("Failed to download model!");
+	}
+
+	// mmproj
+	if (std::filesystem::exists(mmprojPath))
+	{
+		std::println("Mmproj already downloaded.");
+	}
+	else
+	{
+		std::println("Mmproj not found. Downloading...");
+
+		std::println("Downloading mmproj to: ", mmprojPath.generic_string());
+		const int dlResult = std::system(std::format("curl -L# --create-dirs {} -o {}", MmprojUrl, mmprojPath.string()).c_str());
+		if (dlResult != 0) throw std::runtime_error("Failed to download mmproj!");
 	}
 }
 
@@ -63,6 +77,7 @@ LlamaManager::LlamaManager()
 	llamaPath = cachePath / ("llama-" + llamaVer + "/");
 	llamaServerBinPath = llamaPath / "llama-server.exe";
 	modelPath = cachePath / "d1-2B-Q8_0.gguf";
+	mmprojPath = cachePath / "mmproj-d1-2B-F16.gguf";
 }
 
 LlamaManager::~LlamaManager()
@@ -77,10 +92,12 @@ void LlamaManager::launchServer()
 
 	const std::string binPathStr = llamaServerBinPath.string();
 	const std::string modelPathStr = modelPath.string();
+	const std::string mmprojPathStr = mmprojPath.string();
 
 	const char* args[] = {
 		binPathStr.c_str(),
 		"-m", modelPathStr.c_str(),
+		"--mmproj", mmprojPathStr.c_str(),
 		"-b", "8192",
 		"-ub", "8192",
 		"-c", "16384",
@@ -134,7 +151,7 @@ void LlamaManager::launchServer()
 	}
 
 	// test request
-	httpClient = httplib::Client("http://127.0.0.1:9931");
+	httpClient = std::make_unique<httplib::Client>("http://127.0.0.1:9931");
 
 	const std::string jsonData = R"(
 	{
@@ -149,7 +166,7 @@ void LlamaManager::launchServer()
   		}
 	})";
 
-	if (const auto res = httpClient.Post("/v1/systemone", jsonData, "application/json"))
+	if (const auto res = httpClient->Post("/v1/systemone", jsonData, "application/json"))
 	{
 		std::println("test decision succeeded");
 	}
@@ -164,10 +181,37 @@ bool LlamaManager::isServerActive()
 	return subprocess_alive(&llamaSubprocess);
 }
 
-PaddleAction LlamaManager::requestDecision(std::nullptr_t state)
+PaddleAction LlamaManager::requestDecision(DecisionState state)
 {
-	if (const auto res = httpClient.Post("/v1/systemone", nullptr, "application/json"))
+	const std::string jsonPayload = std::format(R"(
+{{
+	"state": "You are playing breakout. Attached is a screenshot of the game window.",
+	"images": ["data:image/{};base64,{}"],
+	"questions": {{
+		"move": {{ "type": "choice", "instructions": "Which way should you move?", "criteria": {{ "left": "Move to the left", "right": "Move to the right" }} }}
+	}}
+}}
+	)", state.screenshotFormat, state.screenshotBase64);
+
+	if (const auto res = httpClient->Post("/v1/systemone", jsonPayload, "application/json"))
 	{
-		
+		// std::println("Received decision: {}", res->body);
+
+		// convert to json
+		nlohmann::json j = nlohmann::json::parse(res->body);
+		std::string choice = j["answers"]["move"]["choice"];
+
+		if (choice == "left")
+			return PaddleAction::Left;
+		if (choice == "right")
+			return PaddleAction::Right;
+
+		std::println("Model returned unusual choice '{}'!", choice);
+		return PaddleAction::None;
+	}
+	else
+	{
+		std::println("decision error: {}", static_cast<int>(res.error()));
+		return PaddleAction::None;
 	}
 }
