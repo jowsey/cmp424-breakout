@@ -72,7 +72,7 @@ LlamaManager::LlamaManager()
 {
 	currentPath = std::filesystem::current_path();
 	cachePath = currentPath / "breakout-cache/";
-	llamaPath = cachePath / ("llama-" LLAMA_VER "/");
+	llamaPath = cachePath / "llama-" LLAMA_VER "/";
 	llamaServerBinPath = llamaPath / "llama-server.exe";
 	modelPath = cachePath / MODEL_FILE;
 	mmprojPath = cachePath / MMPROJ_FILE;
@@ -188,10 +188,10 @@ PaddleAction LlamaManager::requestDecision(DecisionState state)
 
 	const std::string jsonPayload = std::format(R"(
 {{
-	"state": "You are playing breakout. You are controlling the blue paddle at the bottom of the screen. The first image is a screenshot of the *previous* frame, and the second is a screenshot of the *current* frame, for comparison.",
+	"state": "You are playing breakout. Move your paddle to hit the blue ball and prevent it falling off the screen. Two attached images are provided for context. The first attached image is a screenshot of the *previous* frame, and the second is a screenshot of the *current* frame, for comparison.",
 	"images": [{2}"data:image/{0};base64,{1}"],
 	"questions": {{
-		"move": {{ "type": "choice", "instructions": "Which way should the paddle move?", "criteria": {{ "left": "Move to the left", "right": "Move to the right", "none": "Do not move" }} }}
+		"move": {{ "type": "choice", "instructions": "Which direction should the paddle move?", "criteria": {{ "left": "It should move to the left", "right": "It should move to the right", "none": "It should stay still" }} }}
 	}}
 }}
 	)", state.screenshotFormat, state.screenshotBase64, prevScreenshotString);

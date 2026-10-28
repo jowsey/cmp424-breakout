@@ -1,12 +1,13 @@
 #pragma once
 
 #define LLAMA_VER "b11946"
+#define HF_REPO "LiquidAI/d1-2B-GGUF"
 #define MODEL_FILE "d1-2B-Q8_0.gguf"
 #define MMPROJ_FILE "mmproj-d1-2B-F16.gguf"
 
 #define LLAMA_URL "https://github.com/ggml-org/llama.cpp/releases/download/" LLAMA_VER "/llama-" LLAMA_VER "-bin-win-vulkan-x64.zip"
-#define MODEL_URL "https://huggingface.co/LiquidAI/d1-2B-GGUF/resolve/main/" MODEL_FILE "?download=true"
-#define MMPROJ_URL "https://huggingface.co/LiquidAI/d1-2B-GGUF/resolve/main/" MMPROJ_FILE "?download=true"
+#define MODEL_URL "https://huggingface.co/" HF_REPO "/resolve/main/" MODEL_FILE "?download=true"
+#define MMPROJ_URL "https://huggingface.co/" HF_REPO "/resolve/main/" MMPROJ_FILE "?download=true"
 
 #define SUBPROCESS_IMPLEMENTATION
 #include "subprocess/subprocess.h"
