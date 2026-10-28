@@ -5,6 +5,8 @@
 #include <print>
 #include <thread>
 
+#include "httplib/httplib.h"
+
 
 void LlamaManager::cacheDeps()
 {
@@ -112,9 +114,11 @@ void LlamaManager::launchServer()
 				const auto newlinePos = accumulator.find('\n');
 
 				std::string line = accumulator.substr(0, newlinePos);
-				if (line.find("listening on") != std::string::npos)
+
+				const auto targetPos = line.find("listening on");
+				if (targetPos != std::string::npos)
 				{
-					std::println(" {}", line);
+					std::println(" {}", line.substr(targetPos));
 					found = true;
 					break;
 				}
@@ -128,5 +132,30 @@ void LlamaManager::launchServer()
 		{
 			throw std::runtime_error("llama.cpp server process failed to start listening!");
 		}
+	}
+
+	// test request
+	httplib::Client cli("http://127.0.0.1:9931");
+
+	const std::string jsonData = R"(
+	{
+  		"state": "I was charged twice this month, please refund one of them.",
+  		"questions": {
+  		  "refund":  {"type": "noul", "instructions": "Is the customer asking for a refund?"},
+  		  "team":    {"type": "choice", "instructions": "Which team should handle this?",
+  		              "criteria": {"billing": "Charges, refunds, invoices", "technical": "App or site faults",
+  		                           "fraud": "Suspected unauthorised use"}},
+  		  "urgency": {"type": "score", "instructions": "How urgent is this?",
+  		              "criteria": ["Can wait", "Today", "Blocking the customer now"]}
+  		}
+	})";
+
+	if (auto res = cli.Post("/v1/systemone", jsonData, "application/json"))
+	{
+		std::println("test req succeeded: {}", res->body);
+	}
+	else
+	{
+		std::println("test req failed, error code: {}", static_cast<int>(res.error()));
 	}
 }
