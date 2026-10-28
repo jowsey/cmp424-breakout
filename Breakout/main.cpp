@@ -26,6 +26,8 @@ int main()
 	sf::Texture screenshotTexture;
 	screenshotTexture.create(window.getSize().x, window.getSize().y);
 
+	std::vector<sf::Uint8> screenshotMemoryBuffer;
+
 	std::string prevAction{"none"};
 
 	while (window.isOpen())
@@ -49,15 +51,15 @@ int main()
 			screenshotTexture.update(window);
 			sf::Image screenshotImage = screenshotTexture.copyToImage();
 
-			std::string screenshotFormat = "png";
+			std::string screenshotFormat = "jpeg";
 
-			std::vector<sf::Uint8> memoryBuffer;
-			if (!screenshotImage.saveToMemory(memoryBuffer, screenshotFormat))
+			screenshotMemoryBuffer.clear();
+			if (!screenshotImage.saveToMemory(screenshotMemoryBuffer, screenshotFormat))
 			{
 				throw std::runtime_error("failed to save screenshot image to memory!");
 			}
 
-			auto screenshotBase64 = base64::encode_into<std::string>(memoryBuffer.begin(), memoryBuffer.end());
+			auto screenshotBase64 = base64::encode_into<std::string>(screenshotMemoryBuffer.begin(), screenshotMemoryBuffer.end());
 
 			DecisionState state{
 				.screenshotFormat = screenshotFormat,
