@@ -3,7 +3,6 @@
 #include <array>
 #include <filesystem>
 #include <print>
-#include <thread>
 
 #include "httplib/httplib.h"
 
@@ -135,7 +134,7 @@ void LlamaManager::launchServer()
 	}
 
 	// test request
-	httplib::Client cli("http://127.0.0.1:9931");
+	httpClient = httplib::Client("http://127.0.0.1:9931");
 
 	const std::string jsonData = R"(
 	{
@@ -150,12 +149,25 @@ void LlamaManager::launchServer()
   		}
 	})";
 
-	if (auto res = cli.Post("/v1/systemone", jsonData, "application/json"))
+	if (const auto res = httpClient.Post("/v1/systemone", jsonData, "application/json"))
 	{
-		std::println("test req succeeded: {}", res->body);
+		std::println("test decision succeeded");
 	}
 	else
 	{
-		std::println("test req failed, error code: {}", static_cast<int>(res.error()));
+		std::println("test decision failed, error code: {}", static_cast<int>(res.error()));
+	}
+}
+
+bool LlamaManager::isServerActive()
+{
+	return subprocess_alive(&llamaSubprocess);
+}
+
+PaddleAction LlamaManager::requestDecision(std::nullptr_t state)
+{
+	if (const auto res = httpClient.Post("/v1/systemone", nullptr, "application/json"))
+	{
+		
 	}
 }

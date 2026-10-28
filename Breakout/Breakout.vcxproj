@@ -164,6 +164,7 @@
     <ClInclude Include="CONSTANTS.h" />
     <ClInclude Include="GameManager.h" />
     <ClInclude Include="httplib\httplib.h" />
+    <ClInclude Include="json\json.hpp" />
     <ClInclude Include="LlamaManager.h" />
     <ClInclude Include="MessagingSystem.h" />
     <ClInclude Include="Paddle.h" />
