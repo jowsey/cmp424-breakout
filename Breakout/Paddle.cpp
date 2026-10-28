@@ -1,5 +1,4 @@
 #include "Paddle.h"
-#include <iostream>
 
 Paddle::Paddle(sf::RenderWindow* window)
     : _window(window), _width(PADDLE_WIDTH), _timeInNewSize(0.0f), _isAlive(true)
@@ -15,21 +14,22 @@ Paddle::~Paddle()
 
 void Paddle::moveLeft(float dt)
 {
-    float position = _sprite.getPosition().x;
+    const float position = _sprite.getPosition().x;
 
     if (position > 0)
     {
-        _sprite.move(sf::Vector2f(-dt * PADDLE_SPEED, 0));
+        _sprite.move(sf::Vector2f(std::min(-dt * PADDLE_SPEED, position), 0));
     }
 }
 
 void Paddle::moveRight(float dt)
 {
-    float position = _sprite.getPosition().x;
+    const float position = _sprite.getPosition().x;
+    const float remainingWidth = _window->getSize().x - _width - position;
 
-    if (position < _window->getSize().x - _width)
+    if (remainingWidth > 0)
     {
-        _sprite.move(sf::Vector2f(dt * PADDLE_SPEED, 0));
+        _sprite.move(sf::Vector2f(std::min(dt * PADDLE_SPEED, remainingWidth), 0));
     }
 }
 

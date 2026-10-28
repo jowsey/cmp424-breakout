@@ -44,7 +44,7 @@ int main()
 
 		auto action = PaddleAction::None;
 
-		if (llamaManager.isServerActive())
+		if (llamaManager.isServerActive() && gameManager.getLives() > 0)
 		{
 			if (warnedServerInactive) warnedServerInactive = false;
 
