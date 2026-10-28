@@ -364,3 +364,6 @@ MigrationBackup/
 FodyWeavers.xsd
 
 *.exe
+
+# cache files
+*breakout-cache*
