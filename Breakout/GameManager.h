@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <SFML/Graphics.hpp>
 #include "CONSTANTS.h"
 #include "Paddle.h"
@@ -8,13 +9,18 @@
 #include "MessagingSystem.h"
 #include "UI.h"
 
-
+enum class PaddleAction
+{
+    None,
+    Left,
+    Right
+};
 
 class GameManager {
-public:
+public:    
     GameManager(sf::RenderWindow* window);
     void initialize();
-    void update(float dt);
+    void update(float dt, PaddleAction action = PaddleAction::None);
     void loseLife();
     void render();
     void levelComplete();
@@ -25,7 +31,6 @@ public:
     PowerupManager* getPowerupManager() const;
     sf::RenderWindow* getWindow() const;
     UI* getUI() const;
-
 
 private:
     bool _pause;

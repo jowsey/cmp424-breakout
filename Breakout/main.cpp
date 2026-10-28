@@ -12,6 +12,8 @@ int main()
     sf::Clock clock;
     float deltaTime;
 
+	constexpr float fixedStepDeltaTime = 1.0f / 60.0f;
+
     while (window.isOpen())
     {
         sf::Event event;
@@ -19,14 +21,21 @@ int main()
         {
             if (event.type == sf::Event::Closed)
                 window.close();
-        }
+		}
 
-        deltaTime = clock.restart().asSeconds();
+		deltaTime = clock.restart().asSeconds();
+		std::cout << "dt: " << deltaTime << " sec\n";
 
-        gameManager.update(deltaTime);
+		// keyboard override
+		auto action = PaddleAction::None;
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) action = PaddleAction::Left;
+		else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) action = PaddleAction::Right;
 
-        window.clear();
-        gameManager.render();
+		// todo model inference
+		gameManager.update(deltaTime, action);
+
+		window.clear();
+		gameManager.render();
         window.display();
     }
 
