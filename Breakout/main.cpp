@@ -1,6 +1,6 @@
 #include <SFML/Graphics.hpp>
 #include "GameManager.h"
-#include <iostream>
+#include <print>
 
 int main()
 {
@@ -16,15 +16,15 @@ int main()
 
     while (window.isOpen())
     {
-        sf::Event event;
-        while (window.pollEvent(event))
-        {
-            if (event.type == sf::Event::Closed)
-                window.close();
+		sf::Event event;
+		while (window.pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+				window.close();
 		}
 
 		deltaTime = clock.restart().asSeconds();
-		std::cout << "dt: " << deltaTime << " sec\n";
+		// std::println("dt: {} sec", deltaTime);
 
 		// keyboard override
 		auto action = PaddleAction::None;
